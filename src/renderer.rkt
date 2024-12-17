@@ -1,10 +1,10 @@
 #lang racket
 
-(provide render-procedural)
+(provide (all-defined-out))
 
-(require racket/gui)
+(require racket/gui "turtle.rkt")
 
-;; render-procedural: Renders a list of turtle commands step by step
+;; render-procedural: Renders a list of turtle commands step by step with animation
 (define (render-procedural commands)
   ;; Window and canvas setup
   (define frame
@@ -18,7 +18,6 @@
          [parent frame]
          [paint-callback
           (lambda (canvas dc)
-            ;; Draw all the lines in drawn-lines
             (send dc set-pen "black" 2 'solid)
             (for-each
              (lambda (line)
@@ -28,38 +27,47 @@
                (define y2 (+ 400 (- (cadr (cadr line)))))
                (send dc draw-line x1 y1 x2 y2))
              drawn-lines)
-            ;; Draw turtle's current position as a red dot
+            
+            ;; Draw the turtle
             (define tx (+ 400 (car current-pos)))
             (define ty (+ 400 (- (cadr current-pos))))
             (send dc set-pen "red" 5 'solid)
             (send dc draw-ellipse (- tx 3) (- ty 3) 6 6))]))
 
   ;; Initialize state
-  (define drawn-lines '()) ; List of lines to be drawn
-  (define current-pos '(0 0)) ; Current position of the turtle
-  (define current-angle 0) ; Current turtle angle (radians)
+  (define drawn-lines '())
+  (define current-pos '(0 0))
+  (define current-angle 0)
 
   ;; Helper function to refresh the canvas
   (define (refresh-canvas)
     (send canvas refresh)
-    (sleep/yield 0.2)) ; Delay for animation (0.2 seconds)
+    (sleep/yield 0.2)) ;; Increased delay for better visibility
 
-  ;; Execute commands step-by-step
-  (for-each
-   (lambda (command)
-     (define result (command (list current-pos current-angle)))
-     (if (pair? result)
-         (let ((new-pos (car result))
-               (line (cadr result)))
-           (set! drawn-lines (cons line drawn-lines)) ; Add new line to drawn-lines
-           (set! current-pos new-pos)
-           (set! current-angle (cadr result)))
-         ;; Update only the position and angle
-         (let ((new-pos (car result))
-               (new-angle (cadr result)))
-           (set! current-pos new-pos)
-           (set! current-angle new-angle)))
-     (refresh-canvas))) ; Redraw the canvas after each command
+  ;; Show the frame first (empty window)
+  (send frame show #t)
 
-  ;; Show the frame
+  ;; Wait a moment to show the empty window
+  (sleep 0.5)
+
+  ;; Execute commands step-by-step with animation
+  (for/fold ([state (list current-pos current-angle)])
+            ([command commands])
+    ;; Process each command with the current state
+    (define result (command state))
+    ;; Handle different result types
+    (let* ((new-pos (if (pair? (car result))
+                        (car result)
+                        (car result)))
+           (line (if (and (pair? result) (cadr result))
+                     (cadr result)
+                     #f)))
+      (when line
+        (set! drawn-lines (cons line drawn-lines)))
+      (set! current-pos (turtle-pos new-pos))
+      (set! current-angle (turtle-angle new-pos))
+      (refresh-canvas)
+      (list current-pos current-angle)))
+
+  ;; Keep the window open
   (send frame show #t))

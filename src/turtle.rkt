@@ -35,6 +35,8 @@
 ;; procedural-command: Wraps a turtle command into a function
 (define (procedural-command command turtle)
   (match command
-    ['move (move turtle 100)]
-    ['turn (turn turtle 90)]
-    ['draw (draw turtle 100)]))
+    ['move (let ((new-turtle (move turtle 100)))
+             (list new-turtle #f))]  ; Return turtle and #f for no line
+    ['turn (let ((new-turtle (turn turtle 90)))
+             (list new-turtle #f))]  ; Return turtle and #f for no line
+    ['draw (draw turtle 100)]))      ; This already returns [turtle line]

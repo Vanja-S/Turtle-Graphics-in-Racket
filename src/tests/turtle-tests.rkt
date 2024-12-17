@@ -15,8 +15,8 @@
 
 ;; Draw a line 50 units forward
 (define result (draw t3 50))
-(define t4 (car result))    ; Extract the new turtle state
-(define line (cadr result)) ; Extract the line segment
+(define t4 (car result))
+(define line (cadr result))
 
 ;; Print results
 (turtle-state t4)
